@@ -13,18 +13,19 @@ import (
 )
 
 func MainWindow() {
-	a := app.New()
-	w := a.NewWindow("护眼助手")
-	w1 := a.NewWindow("护眼提示")
+	//创建一个app对象，使用appid创建可以推送消息到系统
+	a := app.NewWithID("小绿护眼助手")
+	//窗口对象
+	w := a.NewWindow("小绿护眼助手")
 	//设置窗口大小
-	w.Resize(fyne.NewSize(100, 100))
+	w.Resize(fyne.NewSize(200, 100))
 
 	//时间标签
 	bHour := widget.NewLabel("时：")
 	bMin := widget.NewLabel("分：")
 	bSecods := widget.NewLabel("秒：")
 
-	//下拉选择框 输入时间
+	//下拉选择框 输入时间 调用生成时间的方法
 	xHour := widget.NewSelectEntry(util.NumStringBuild(24))   //时
 	xMin := widget.NewSelectEntry(util.NumStringBuild(60))    //分
 	xSecods := widget.NewSelectEntry(util.NumStringBuild(60)) //秒
@@ -34,17 +35,17 @@ func MainWindow() {
 
 	//开始按钮
 	start := widget.NewButton("开始", func() {
-		//把时间转为int类型
+		//把时间转为int类型,这里没有进行错误处理
 		inxHour, _ := strconv.Atoi(xHour.Text)
 		inxMin, _ := strconv.Atoi(xMin.Text)
 		inxSecods, _ := strconv.Atoi(xSecods.Text)
-
-		go DateDecres(inxHour, inxMin, inxSecods, da, w1)
+		//开启一个协程进行计时
+		go DateDecres(inxHour, inxMin, inxSecods, da)
 	})
 
 	//停止按钮
 	stop := widget.NewButton("停止", func() {
-		fmt.Println("停止")
+		//向定时器发送一个数字，定时器收到就会调用停止的方法
 		da <- 1
 	})
 
@@ -52,6 +53,7 @@ func MainWindow() {
 	//先把元素存入盒子
 	//网格布局
 	box := container.NewGridWithColumns(6, bHour, xHour, bMin, xMin, bSecods, xSecods)
+	//HBox布局，左右堆叠
 	bubox := container.NewHBox(start, stop)
 
 	//边布局
@@ -59,12 +61,14 @@ func MainWindow() {
 		layout.NewBorderLayout(box, nil, nil, bubox),
 		box, bubox,
 	)
+	//把布局加入到窗体中
 	w.SetContent(content)
 	w.ShowAndRun()
 }
 
 //计时器
-func DateDecres(hours int, min int, secods int, da chan int, wi fyne.Window) {
+//params: hours 时, min 分, secods 秒  da 控制计时器停止的channel
+func DateDecres(hours int, min int, secods int, da chan int) {
 	//time.Duration将int类型转为时间类型
 	fhour := time.Duration(hours) * time.Second * 60 * 60
 	fmin := time.Duration(min) * time.Second * 60
@@ -72,10 +76,13 @@ func DateDecres(hours int, min int, secods int, da chan int, wi fyne.Window) {
 
 	timer := time.NewTimer(fhour + fmin + fsecods)
 	select {
+	//收到消息则表示计时结束
 	case <-timer.C:
 		fmt.Printf("运行时间：%d 小时 %d 分钟 %d 秒\n", hours, min, secods)
-		PopUpWindow(wi)
+		//系统弹出提示休息眼睛
+		PopPushInfo(util.TimeInfoBuilder(hours, min, secods))
 		break
+	//收到消息就停止定时器
 	case <-da:
 		timer.Stop()
 		break

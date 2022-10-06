@@ -2,24 +2,15 @@ package ui
 
 import (
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/dialog"
 )
 
 //一些其它的窗体
 
-//弹窗
-func PopUpWindow(window fyne.Window) {
-
-	//设置弹窗大小
-	window.Resize(fyne.NewSize(230, 150))
-	confirm := dialog.NewConfirm("护眼提示", "休息一下眼睛吧", func(b bool) {
-		if b {
-			window.Hide()
-		} else {
-			window.Hide()
-		}
-	}, window)
-
-	confirm.Show()
-	window.Show()
+//相同显示消息提示
+func PopPushInfo(timeinfo string) {
+	//消息推送到系统消息显示
+	fyne.CurrentApp().SendNotification(&fyne.Notification{
+		Title:   "护眼提示",
+		Content: "已经用眼" + timeinfo + "啦，休息一下眼睛吧",
+	})
 }

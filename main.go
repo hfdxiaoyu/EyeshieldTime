@@ -10,8 +10,8 @@ import (
 func main() {
 	//设置中文字体
 	util.InitFront()
-	//ui.InitWindow()
-	ui.MainWindow();
+	//调用主界面
+	ui.MainWindow()
 	//取消设置单个环境变量
 	os.Unsetenv("FYNE_FONT")
 }

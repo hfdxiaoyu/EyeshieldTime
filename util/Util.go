@@ -57,3 +57,57 @@ func TimeInfoBuilder(hours int, min int, secods int) string {
 	}
 	return " 0 小时 0 分钟 0 秒"
 }
+
+//更新进度条
+func UpdateProgressBar(hours int, min int, secods int, prg *widget.ProgressBar, control chan int) {
+	//time.Duration将int类型转为时间类型
+	fhour := time.Duration(hours) * time.Second * 60 * 60
+	fmin := time.Duration(min) * time.Second * 60
+	fsecods := time.Duration(secods) * time.Second
+	alltime := fhour + fmin + fsecods
+	inittime := time.Second * 0
+	//设置进度条的最大值
+	prg.Max = alltime.Seconds()
+	//进度条自动相加并更新的协程
+	go func() {
+		inittime += 1
+		//控制进度条是否继续
+		controlProgressBar := true
+
+		//每秒运行一次
+		for range time.Tick(time.Second) {
+			if controlProgressBar {
+				//fmt.Println("进度条开始运行")
+				//设置进度条的值
+				prg.SetValue(inittime.Seconds())
+				//一秒增加一点
+				inittime += time.Second
+				//到时间自动退出
+				if inittime == alltime {
+					break
+				}
+			}
+			//开启协程循环监听消息
+			go func() {
+				for {
+					//接收通道中的数据
+					select {
+					case con := <-control:
+						//如果是-1则暂停进度条
+						if con == -1 {
+							controlProgressBar = false
+						} else if con == 1 {
+							//继续运行进度条
+							controlProgressBar = true
+						}
+					}
+					//时间结束停止监听通道
+					if inittime == alltime {
+						break
+					}
+				}
+			}()
+		}
+	}()
+
+}

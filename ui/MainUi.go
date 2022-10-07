@@ -35,25 +35,32 @@ func MainWindow() {
 	xMin.SetText("0")
 	xSecods.SetText("0")
 
+	//新建一个进度条
+	bar := widget.NewProgressBar()
+
 	//用来控制定时器
 	var da = make(chan int)
 
 	//开始按钮
 	start := widget.NewButton("开始", func() {
 
-		//TODO 这里需要进行错误判断，没点击下拉框输入框的时候里面是没有值的
-
 		//把时间转为int类型,这里没有进行错误处理
 		inxHour, _ := strconv.Atoi(xHour.Text)
 		inxMin, _ := strconv.Atoi(xMin.Text)
 		inxSecods, _ := strconv.Atoi(xSecods.Text)
+
 		//开启一个协程进行计时
-		go DateDecres(inxHour, inxMin, inxSecods, da)
+		go DateDecres(inxHour, inxMin, inxSecods, da, bar)
 	})
 
 	//停止按钮
 	stop := widget.NewButton("停止", func() {
 		//向定时器发送一个数字，定时器收到就会调用停止的方法
+		da <- -1
+	})
+
+	//重启按钮
+	rest := widget.NewButton("重启", func() {
 		da <- 1
 	})
 
@@ -62,12 +69,12 @@ func MainWindow() {
 	//网格布局
 	box := container.NewGridWithColumns(6, bHour, xHour, bMin, xMin, bSecods, xSecods)
 	//HBox布局，左右堆叠
-	bubox := container.NewHBox(start, stop)
+	bubox := container.NewHBox(start, rest, stop)
 
 	//边布局
 	content := container.New(
-		layout.NewBorderLayout(box, nil, nil, bubox),
-		box, bubox,
+		layout.NewBorderLayout(box, nil, bar, bubox),
+		box, layout.NewSpacer(), bar, bubox,
 	)
 	//把布局加入到窗体中
 	w.SetContent(content)
@@ -75,25 +82,67 @@ func MainWindow() {
 }
 
 //计时器
-//params: hours 时, min 分, secods 秒  da 控制计时器停止的channel
-func DateDecres(hours int, min int, secods int, da chan int) {
+//params: hours 时, min 分, secods 秒  da 控制计时器状态的channel
+func DateDecres(hours int, min int, secods int, da chan int, bar1 *widget.ProgressBar) {
 	//time.Duration将int类型转为时间类型
 	fhour := time.Duration(hours) * time.Second * 60 * 60
 	fmin := time.Duration(min) * time.Second * 60
 	fsecods := time.Duration(secods) * time.Second
-
+	//把参数传入定时器
 	timer := time.NewTimer(fhour + fmin + fsecods)
-	select {
-	//收到消息则表示计时结束
-	case <-timer.C:
-		fmt.Printf("运行时间：%d 小时 %d 分钟 %d 秒\n", hours, min, secods)
-		//系统弹出提示休息眼睛
-		PopPushInfo(util.TimeInfoBuilder(hours, min, secods))
-		break
-	//收到消息就停止定时器
-	case <-da:
-		timer.Stop()
-		break
-	}
+	//控制进度条的channel
+	var controlbar = make(chan int)
+	//进度条
+	showProgressBar(hours, min, secods, bar1, controlbar)
+	//存储运行时间
+	runtime := time.Second
+	//点击停止时把已运行时间存入此变量
+	stopRunTime := time.Second * 0
+	//时间自动记录的协程
+	go func() {
+		//每秒运行一次
+		for range time.Tick(time.Second) {
+			runtime += time.Second
+			//运行完退出循环
+			if runtime == fhour+fmin+fsecods {
+				break
+			}
+		}
+	}()
+
+	//开启协程循环监听
+	go func() {
+		//循环监听
+		for {
+			select {
+			//收到消息则表示计时结束
+			case <-timer.C:
+				fmt.Printf("运行时间：%d 小时 %d 分钟 %d 秒\n", hours, min, secods)
+				//系统弹出提示休息眼睛
+				PopPushInfo(util.TimeInfoBuilder(hours, min, secods))
+				break
+			//根据收到的消息判断要对定时器进行的操作
+			case c := <-da:
+				//如果收到的是 -1 则停止定时器
+				//对状态进行判断
+				if c == -1 {
+					//发送消息停止进度条
+					controlbar <- -1
+					stopRunTime = runtime
+					timer.Stop()
+					//如果收到的是1则重启定时器
+				} else if c == 1 {
+					//发送消息启动进度条
+					controlbar <- 1
+					timer.Reset((fhour + fmin + fsecods) - stopRunTime)
+				}
+
+			}
+			//运行结束停止监听
+			if runtime == fhour+fmin+fsecods {
+				break
+			}
+		}
+	}()
 
 }

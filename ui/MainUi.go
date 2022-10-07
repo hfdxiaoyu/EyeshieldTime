@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+//主窗口
 func MainWindow() {
 	//创建一个app对象，使用appid创建可以推送消息到系统
 	a := app.NewWithID("小绿护眼助手")
@@ -29,12 +30,19 @@ func MainWindow() {
 	xHour := widget.NewSelectEntry(util.NumStringBuild(24))   //时
 	xMin := widget.NewSelectEntry(util.NumStringBuild(60))    //分
 	xSecods := widget.NewSelectEntry(util.NumStringBuild(60)) //秒
+	//设置初始值
+	xHour.SetText("0")
+	xMin.SetText("0")
+	xSecods.SetText("0")
 
 	//用来控制定时器
 	var da = make(chan int)
 
 	//开始按钮
 	start := widget.NewButton("开始", func() {
+
+		//TODO 这里需要进行错误判断，没点击下拉框输入框的时候里面是没有值的
+
 		//把时间转为int类型,这里没有进行错误处理
 		inxHour, _ := strconv.Atoi(xHour.Text)
 		inxMin, _ := strconv.Atoi(xMin.Text)

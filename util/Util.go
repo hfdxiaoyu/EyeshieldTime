@@ -48,12 +48,12 @@ func NumStringBuild(num int) []string {
 //return 时间格式的字符串
 func TimeInfoBuilder(hours int, min int, secods int) string {
 	//判断返回的消息是 时还是分还是秒
-	if hours > 0 && min > 0 && secods > 0 {
-		return strconv.Itoa(hours) + " 小时 " + strconv.Itoa(hours) + " 分钟 " + strconv.Itoa(secods) + "秒"
-	} else if min > 0 && secods > 0 {
-		return strconv.Itoa(hours) + " 分钟 " + strconv.Itoa(secods) + "秒"
+	if hours > 0 && min >= 0 && secods >= 0 {
+		return " " + strconv.Itoa(hours) + " 小时 " + strconv.Itoa(min) + " 分钟 " + strconv.Itoa(secods) + " 秒 "
+	} else if min > 0 && secods >= 0 {
+		return " " + strconv.Itoa(min) + " 分钟 " + strconv.Itoa(secods) + " 秒 "
 	} else if secods > 0 {
-		return strconv.Itoa(secods) + "秒"
+		return " " + strconv.Itoa(secods) + " 秒 "
 	}
-	return "0 小时 0 分钟 0 秒"
+	return " 0 小时 0 分钟 0 秒"
 }

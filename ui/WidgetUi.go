@@ -19,7 +19,6 @@ func PopPushInfo(timeinfo string) {
 }
 
 //进度条显示时间倒计时
-//return 进度条
 func showProgressBar(hours int, min int, secods int, bar *widget.ProgressBar, control chan int) {
 
 	//调用更新进度条的方法

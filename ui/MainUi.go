@@ -104,7 +104,7 @@ func DateDecres(hours int, min int, secods int, da chan int, bar1 *widget.Progre
 		for range time.Tick(time.Second) {
 			runtime += time.Second
 			//运行完退出循环
-			if runtime == fhour+fmin+fsecods {
+			if runtime > fhour+fmin+fsecods {
 				break
 			}
 		}
@@ -139,7 +139,7 @@ func DateDecres(hours int, min int, secods int, da chan int, bar1 *widget.Progre
 
 			}
 			//运行结束停止监听
-			if runtime == fhour+fmin+fsecods {
+			if runtime > fhour+fmin+fsecods {
 				break
 			}
 		}

@@ -19,12 +19,14 @@ func MainWindow() {
 	//窗口对象
 	w := a.NewWindow("小绿护眼助手")
 	//设置窗口大小
-	w.Resize(fyne.NewSize(200, 100))
+	w.Resize(fyne.NewSize(300, 100))
 
 	//时间标签
 	bHour := widget.NewLabel("时：")
 	bMin := widget.NewLabel("分：")
 	bSecods := widget.NewLabel("秒：")
+	//进度条标签
+	bBar := widget.NewLabel("时间进度：")
 
 	//下拉选择框 输入时间 调用生成时间的方法
 	xHour := widget.NewSelectEntry(util.NumStringBuild(24))   //时
@@ -41,8 +43,11 @@ func MainWindow() {
 	//用来控制定时器
 	var da = make(chan int)
 
+	//新建三个按钮
+	var start, stop, rest *widget.Button
+
 	//开始按钮
-	start := widget.NewButton("开始", func() {
+	start = widget.NewButton("开始", func() {
 
 		//把时间转为int类型,这里没有进行错误处理
 		inxHour, _ := strconv.Atoi(xHour.Text)
@@ -50,31 +55,43 @@ func MainWindow() {
 		inxSecods, _ := strconv.Atoi(xSecods.Text)
 
 		//开启一个协程进行计时
-		go DateDecres(inxHour, inxMin, inxSecods, da, bar)
+		go DateDecres(inxHour, inxMin, inxSecods, da, bar, start)
+		//开始运行之后开始按钮不能按,重启按钮不能按
+		start.Disable()
+		//停止按钮可按
+		stop.Enable()
 	})
 
 	//停止按钮
-	stop := widget.NewButton("停止", func() {
+	stop = widget.NewButton("停止", func() {
 		//向定时器发送一个数字，定时器收到就会调用停止的方法
 		da <- -1
+		rest.Enable()
 	})
+	//停止按钮在开始之前是不能按的
+	stop.Disable()
 
 	//重启按钮
-	rest := widget.NewButton("重启", func() {
+	rest = widget.NewButton("重启", func() {
 		da <- 1
 	})
-
+	//重启按钮刚刚开始是不能按的
+	rest.Disable()
 	//布局
 	//先把元素存入盒子
 	//网格布局
 	box := container.NewGridWithColumns(6, bHour, xHour, bMin, xMin, bSecods, xSecods)
-	//HBox布局，左右堆叠
-	bubox := container.NewHBox(start, rest, stop)
+	//按钮使用网格布局在盒子的底部
+	bubox1 := container.NewGridWithColumns(3, start, rest, stop)
+	//给进度条装入一个网格
+	bar1 := container.NewGridWithColumns(2, bBar, bar)
+	//盒子中间使用VBox布局，上下堆叠的盒子
+	centbox := container.NewVBox(bar1)
 
 	//边布局
 	content := container.New(
-		layout.NewBorderLayout(box, nil, bar, bubox),
-		box, layout.NewSpacer(), bar, bubox,
+		layout.NewBorderLayout(box, bubox1, nil, nil),
+		box, bubox1, layout.NewSpacer(), layout.NewSpacer(), centbox,
 	)
 	//把布局加入到窗体中
 	w.SetContent(content)
@@ -83,7 +100,7 @@ func MainWindow() {
 
 //计时器
 //params: hours 时, min 分, secods 秒  da 控制计时器状态的channel
-func DateDecres(hours int, min int, secods int, da chan int, bar1 *widget.ProgressBar) {
+func DateDecres(hours int, min int, secods int, da chan int, bar1 *widget.ProgressBar, start *widget.Button) {
 	//time.Duration将int类型转为时间类型
 	fhour := time.Duration(hours) * time.Second * 60 * 60
 	fmin := time.Duration(min) * time.Second * 60
@@ -105,6 +122,8 @@ func DateDecres(hours int, min int, secods int, da chan int, bar1 *widget.Progre
 			runtime += time.Second
 			//运行完退出循环
 			if runtime > fhour+fmin+fsecods {
+				//如果非正常停止，停止协程后也自动设置开始按钮可用
+				start.Enable()
 				break
 			}
 		}
@@ -120,6 +139,8 @@ func DateDecres(hours int, min int, secods int, da chan int, bar1 *widget.Progre
 				fmt.Printf("运行时间：%d 小时 %d 分钟 %d 秒\n", hours, min, secods)
 				//系统弹出提示休息眼睛
 				PopPushInfo(util.TimeInfoBuilder(hours, min, secods))
+				//开始按钮可用
+				start.Enable()
 				break
 			//根据收到的消息判断要对定时器进行的操作
 			case c := <-da:

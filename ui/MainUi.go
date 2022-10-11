@@ -55,7 +55,7 @@ func MainWindow() {
 		inxSecods, _ := strconv.Atoi(xSecods.Text)
 
 		//开启一个协程进行计时
-		go DateDecres(inxHour, inxMin, inxSecods, da, bar, start)
+		go DateDecres(inxHour, inxMin, inxSecods, da, bar, start, stop)
 		//开始运行之后开始按钮不能按,重启按钮不能按
 		start.Disable()
 		//停止按钮可按
@@ -100,7 +100,7 @@ func MainWindow() {
 
 //计时器
 //params: hours 时, min 分, secods 秒  da 控制计时器状态的channel
-func DateDecres(hours int, min int, secods int, da chan int, bar1 *widget.ProgressBar, start *widget.Button) {
+func DateDecres(hours int, min int, secods int, da chan int, bar1 *widget.ProgressBar, start *widget.Button, stop *widget.Button) {
 	//time.Duration将int类型转为时间类型
 	fhour := time.Duration(hours) * time.Second * 60 * 60
 	fmin := time.Duration(min) * time.Second * 60
@@ -124,6 +124,8 @@ func DateDecres(hours int, min int, secods int, da chan int, bar1 *widget.Progre
 			if runtime > fhour+fmin+fsecods {
 				//如果非正常停止，停止协程后也自动设置开始按钮可用
 				start.Enable()
+				//停止按钮不能使用
+				stop.Disable()
 				break
 			}
 		}
